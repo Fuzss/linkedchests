@@ -1,12 +1,11 @@
 package net.kyrptonaught.linkedstorage.util;
 
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.text.Text;
-import net.minecraft.util.DyeColor;
-
 import java.util.List;
 import java.util.UUID;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.DyeColor;
 
 public class DyeChannel implements Cloneable {
     public byte[] dyeChannel;
@@ -24,12 +23,12 @@ public class DyeChannel implements Cloneable {
         return dyeChannel[0] + ":" + dyeChannel[1] + ":" + dyeChannel[2];
     }
 
-    public List<Text> getCleanName() {
-        Text dyechannel = Text.translatable("item.minecraft.firework_star." + DyeColor.byId(dyeChannel[0]).getName()).append(", ")
-                .append(Text.translatable("item.minecraft.firework_star." + DyeColor.byId(dyeChannel[1]).getName())).append(", ")
-                .append(Text.translatable("item.minecraft.firework_star." + DyeColor.byId(dyeChannel[2]).getName()));
+    public List<Component> getCleanName() {
+        Component dyechannel = Component.translatable("item.minecraft.firework_star." + DyeColor.byId(dyeChannel[0]).getName()).append(", ")
+                .append(Component.translatable("item.minecraft.firework_star." + DyeColor.byId(dyeChannel[1]).getName())).append(", ")
+                .append(Component.translatable("item.minecraft.firework_star." + DyeColor.byId(dyeChannel[2]).getName()));
 
-        return List.of(Text.translatable("text.linkeditem.channel", dyechannel));
+        return List.of(Component.translatable("text.linkeditem.channel", dyechannel));
     }
 
     public String getSaveName() {
@@ -60,21 +59,21 @@ public class DyeChannel implements Cloneable {
         return new PlayerDyeChannel(playerid, dyeChannel.clone());
     }
 
-    public void toBuf(PacketByteBuf buffer) {
-        buffer.writeNbt(toTag(new NbtCompound()));
+    public void toBuf(FriendlyByteBuf buffer) {
+        buffer.writeNbt(toTag(new CompoundTag()));
     }
 
-    public static DyeChannel fromBuf(PacketByteBuf buffer) {
+    public static DyeChannel fromBuf(FriendlyByteBuf buffer) {
         return fromTag(buffer.readNbt());
     }
 
-    public NbtCompound toTag(NbtCompound tag) {
+    public CompoundTag toTag(CompoundTag tag) {
         tag.putInt("type", type);
         tag.putByteArray("dyechannel", dyeChannel);
         return tag;
     }
 
-    public static DyeChannel fromTag(NbtCompound tag) {
+    public static DyeChannel fromTag(CompoundTag tag) {
         DyeChannel dyeChannel = defaultChannel();
         if (tag.contains("dyechannel", 11)) {
             int[] oldChannel = tag.getIntArray("dyechannel");
@@ -84,7 +83,7 @@ public class DyeChannel implements Cloneable {
             dyeChannel = new DyeChannel(tag.getByteArray("dyechannel"));
         int type = tag.getInt("type");
         if (type == 1)
-            return dyeChannel.toPlayerDyeChannel(tag.getUuid("playerid"));
+            return dyeChannel.toPlayerDyeChannel(tag.getUUID("playerid"));
         return dyeChannel;
     }
 }

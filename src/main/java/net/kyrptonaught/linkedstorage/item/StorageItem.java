@@ -7,55 +7,59 @@ import net.kyrptonaught.linkedstorage.block.StorageBlock;
 import net.kyrptonaught.linkedstorage.inventory.LinkedContainer;
 import net.kyrptonaught.linkedstorage.util.DyeChannel;
 import net.kyrptonaught.linkedstorage.util.LinkedInventoryHelper;
-import net.minecraft.client.item.TooltipContext;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUsageContext;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.Registries;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.*;
-import net.minecraft.world.World;
-
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.Level;
 import java.util.List;
 
 public class StorageItem extends Item {
-    public StorageItem(Settings item$Settings_1) {
+    public StorageItem(Properties item$Settings_1) {
         super(item$Settings_1);
-        Registry.register(Registries.ITEM, new Identifier(LinkedStorageMod.MOD_ID, "storageitem"), this);
+        Registry.register(BuiltInRegistries.ITEM, new ResourceLocation(LinkedStorageMod.MOD_ID, "storageitem"), this);
 
     }
 
     @Override
-    public ActionResult useOnBlock(ItemUsageContext context) {
-        if (!context.getWorld().isClient) {
-            PlayerEntity playerEntity = context.getPlayer();
-            if (playerEntity.isSneaking() && context.getWorld().getBlockState(context.getBlockPos()).getBlock() instanceof StorageBlock) {
-                DyeChannel channel = LinkedInventoryHelper.getBlockChannel(context.getWorld(), context.getBlockPos());
-                LinkedInventoryHelper.setItemChannel(channel, context.getStack());
-            } else use(context.getWorld(), context.getPlayer(), context.getHand());
+    public InteractionResult useOn(UseOnContext context) {
+        if (!context.getLevel().isClientSide) {
+            Player playerEntity = context.getPlayer();
+            if (playerEntity.isShiftKeyDown() && context.getLevel().getBlockState(context.getClickedPos()).getBlock() instanceof StorageBlock) {
+                DyeChannel channel = LinkedInventoryHelper.getBlockChannel(context.getLevel(), context.getClickedPos());
+                LinkedInventoryHelper.setItemChannel(channel, context.getItemInHand());
+            } else use(context.getLevel(), context.getPlayer(), context.getHand());
         }
-        return ActionResult.SUCCESS;
+        return InteractionResult.SUCCESS;
     }
 
     @Override
-    public TypedActionResult<ItemStack> use(World world, PlayerEntity playerEntity, Hand hand) {
-        ItemStack stack = playerEntity.getStackInHand(hand);
-        if (!world.isClient) {
-            playerEntity.openHandledScreen(LinkedContainer.createScreenHandlerFactory(LinkedInventoryHelper.getItemChannel(stack)));
+    public InteractionResultHolder<ItemStack> use(Level world, Player playerEntity, InteractionHand hand) {
+        ItemStack stack = playerEntity.getItemInHand(hand);
+        if (!world.isClientSide) {
+            playerEntity.openMenu(LinkedContainer.createScreenHandlerFactory(LinkedInventoryHelper.getItemChannel(stack)));
         }
-        return new TypedActionResult<>(ActionResult.SUCCESS, stack);
+        return new InteractionResultHolder<>(InteractionResult.SUCCESS, stack);
     }
 
 
     @Environment(EnvType.CLIENT)
     @Override
-    public void appendTooltip(ItemStack stack, World world, List<Text> tooltip, TooltipContext options) {
+    public void appendHoverText(ItemStack stack, Level world, List<Component> tooltip, TooltipFlag options) {
         DyeChannel channel = LinkedInventoryHelper.getItemChannel(stack);
-        for (Text text : channel.getCleanName()) {
-            tooltip.add(((MutableText) text).formatted(Formatting.GRAY));
+        for (Component text : channel.getCleanName()) {
+            tooltip.add(((MutableComponent) text).withStyle(ChatFormatting.GRAY));
         }
     }
 }

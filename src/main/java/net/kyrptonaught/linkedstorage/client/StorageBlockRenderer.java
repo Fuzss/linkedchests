@@ -1,69 +1,69 @@
 package net.kyrptonaught.linkedstorage.client;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.Axis;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.kyrptonaught.linkedstorage.LinkedStorageModClient;
 import net.kyrptonaught.linkedstorage.block.StorageBlock;
 import net.kyrptonaught.linkedstorage.block.StorageBlockEntity;
 import net.kyrptonaught.linkedstorage.util.PlayerDyeChannel;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.render.TexturedRenderLayers;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.block.entity.BlockEntityRenderer;
-import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
-import net.minecraft.client.util.SpriteIdentifier;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.DyeColor;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.RotationAxis;
-import net.minecraft.world.World;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.Sheets;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.resources.model.Material;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 
 @Environment(EnvType.CLIENT)
 public class StorageBlockRenderer implements BlockEntityRenderer<StorageBlockEntity> {
-    private static final Identifier WOOL_TEXTURE = new Identifier("textures/block/white_wool.png");
-    private static final Identifier DIAMOND_TEXTURE = new Identifier("textures/block/diamond_block.png");
+    private static final ResourceLocation WOOL_TEXTURE = new ResourceLocation("textures/block/white_wool.png");
+    private static final ResourceLocation DIAMOND_TEXTURE = new ResourceLocation("textures/block/diamond_block.png");
     LinkedChestModel model;
 
-    public StorageBlockRenderer(BlockEntityRendererFactory.Context ctx) {
+    public StorageBlockRenderer(BlockEntityRendererProvider.Context ctx) {
         model = new LinkedChestModel(ctx);
     }
 
     @Override
-    public void render(StorageBlockEntity blockEntity, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
+    public void render(StorageBlockEntity blockEntity, float tickDelta, PoseStack matrices, MultiBufferSource vertexConsumers, int light, int overlay) {
         byte[] dyes = blockEntity.getChannel().dyeChannel;
-        float[] color1 = DyeColor.byId(dyes[0]).getColorComponents();
-        float[] color2 = DyeColor.byId(dyes[1]).getColorComponents();
-        float[] color3 = DyeColor.byId(dyes[2]).getColorComponents();
+        float[] color1 = DyeColor.byId(dyes[0]).getTextureDiffuseColors();
+        float[] color2 = DyeColor.byId(dyes[1]).getTextureDiffuseColors();
+        float[] color3 = DyeColor.byId(dyes[2]).getTextureDiffuseColors();
 
-        World world = blockEntity.getWorld();
-        BlockPos pos = blockEntity.getPos();
+        Level world = blockEntity.getLevel();
+        BlockPos pos = blockEntity.getBlockPos();
         BlockState state = world.getBlockState(pos);
 
         //fixes crash with carpet
         if (state.getBlock() instanceof StorageBlock) {
-            matrices.push();
-            float f = state.get(StorageBlock.FACING).asRotation();
+            matrices.pushPose();
+            float f = state.getValue(StorageBlock.FACING).toYRot();
             matrices.translate(0.5D, 0.5D, 0.5D);
-            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-f));
+            matrices.mulPose(Axis.YP.rotationDegrees(-f));
             matrices.translate(-0.5D, -0.5D, -0.5D);
 
-            model.setLidPitch(blockEntity.getAnimationProgress(tickDelta));
-            SpriteIdentifier spriteIdentifier = new SpriteIdentifier(TexturedRenderLayers.CHEST_ATLAS_TEXTURE, LinkedStorageModClient.TEXTURE);
-            VertexConsumer vertexConsumer = spriteIdentifier.getVertexConsumer(vertexConsumers, RenderLayer::getEntityCutout);
+            model.setLidPitch(blockEntity.getOpenNess(tickDelta));
+            Material spriteIdentifier = new Material(Sheets.CHEST_SHEET, LinkedStorageModClient.TEXTURE);
+            VertexConsumer vertexConsumer = spriteIdentifier.buffer(vertexConsumers, RenderType::entityCutout);
             model.render(matrices, vertexConsumer, light, overlay);
 
-            model.button1.render(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityCutout(WOOL_TEXTURE)), light, overlay, color1[0], color1[1], color1[2], 1);
-            model.button2.render(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityCutout(WOOL_TEXTURE)), light, overlay, color2[0], color2[1], color2[2], 1);
-            model.button3.render(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityCutout(WOOL_TEXTURE)), light, overlay, color3[0], color3[1], color3[2], 1);
+            model.button1.render(matrices, vertexConsumers.getBuffer(RenderType.entityCutout(WOOL_TEXTURE)), light, overlay, color1[0], color1[1], color1[2], 1);
+            model.button2.render(matrices, vertexConsumers.getBuffer(RenderType.entityCutout(WOOL_TEXTURE)), light, overlay, color2[0], color2[1], color2[2], 1);
+            model.button3.render(matrices, vertexConsumers.getBuffer(RenderType.entityCutout(WOOL_TEXTURE)), light, overlay, color3[0], color3[1], color3[2], 1);
 
             if (blockEntity.getChannel() instanceof PlayerDyeChannel)
-                model.latch.render(matrices, vertexConsumers.getBuffer(RenderLayer.getEntityCutout(DIAMOND_TEXTURE)), light, overlay, 1, 1, 1, 1);
+                model.latch.render(matrices, vertexConsumers.getBuffer(RenderType.entityCutout(DIAMOND_TEXTURE)), light, overlay, 1, 1, 1, 1);
             else
                 model.latch.render(matrices, vertexConsumer, light, overlay);
-            matrices.pop();
+            matrices.popPose();
         }
     }
 }

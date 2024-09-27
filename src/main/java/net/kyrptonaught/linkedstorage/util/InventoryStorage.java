@@ -1,12 +1,11 @@
 package net.kyrptonaught.linkedstorage.util;
 
 import net.kyrptonaught.linkedstorage.inventory.LinkedInventory;
-import net.minecraft.inventory.Inventories;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.collection.DefaultedList;
-
+import net.minecraft.core.NonNullList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.Container;
+import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.item.ItemStack;
 import java.util.HashMap;
 
 public class InventoryStorage {
@@ -17,19 +16,19 @@ public class InventoryStorage {
         this.name = name;
     }
 
-    public void fromTag(NbtCompound tag) {
+    public void fromTag(CompoundTag tag) {
         inventories.clear();
-        NbtCompound invs = tag.getCompound("invs");
-        for (String key : invs.getKeys()) {
+        CompoundTag invs = tag.getCompound("invs");
+        for (String key : invs.getAllKeys()) {
             inventories.put(key, fromList(invs.getCompound(key)));
         }
     }
 
-    public NbtCompound toTag(NbtCompound tag) {
-        NbtCompound invs = new NbtCompound();
+    public CompoundTag toTag(CompoundTag tag) {
+        CompoundTag invs = new CompoundTag();
         for (String key : inventories.keySet()) {
             if (!inventories.get(key).isEmpty())
-                invs.put(key, Inventories.writeNbt(new NbtCompound(), toList(inventories.get(key))));
+                invs.put(key, ContainerHelper.saveAllItems(new CompoundTag(), toList(inventories.get(key))));
         }
         tag.put("invs", invs);
         return tag;
@@ -42,19 +41,19 @@ public class InventoryStorage {
         return inventories.get(channel);
     }
 
-    private DefaultedList<ItemStack> toList(Inventory inv) {
-        DefaultedList<ItemStack> stacks = DefaultedList.ofSize(inv.size(), ItemStack.EMPTY);
-        for (int i = 0; i < inv.size(); i++)
-            stacks.set(i, inv.getStack(i));
+    private NonNullList<ItemStack> toList(Container inv) {
+        NonNullList<ItemStack> stacks = NonNullList.withSize(inv.getContainerSize(), ItemStack.EMPTY);
+        for (int i = 0; i < inv.getContainerSize(); i++)
+            stacks.set(i, inv.getItem(i));
         return stacks;
     }
 
-    private LinkedInventory fromList(NbtCompound tag) {
+    private LinkedInventory fromList(CompoundTag tag) {
         LinkedInventory inventory = new LinkedInventory();
-        DefaultedList<ItemStack> stacks = DefaultedList.ofSize(inventory.size(), ItemStack.EMPTY);
-        Inventories.readNbt(tag, stacks);
+        NonNullList<ItemStack> stacks = NonNullList.withSize(inventory.getContainerSize(), ItemStack.EMPTY);
+        ContainerHelper.loadAllItems(tag, stacks);
         for (int i = 0; i < stacks.size(); i++)
-            inventory.setStack(i, stacks.get(i));
+            inventory.setItem(i, stacks.get(i));
         return inventory;
     }
 

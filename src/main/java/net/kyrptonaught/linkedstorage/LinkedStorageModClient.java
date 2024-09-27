@@ -20,40 +20,39 @@ import net.kyrptonaught.linkedstorage.register.ModItems;
 import net.kyrptonaught.linkedstorage.util.DyeChannel;
 import net.kyrptonaught.linkedstorage.util.LinkedInventoryHelper;
 import net.kyrptonaught.linkedstorage.util.PlayerDyeChannel;
-import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
-import net.minecraft.client.render.TexturedRenderLayers;
-import net.minecraft.client.render.entity.model.EntityModelLayer;
-import net.minecraft.util.DyeColor;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.gui.screens.inventory.ContainerScreen;
+import net.minecraft.client.model.geom.ModelLayerLocation;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.DyeColor;
 
 
 @Environment(EnvType.CLIENT)
 public class LinkedStorageModClient implements ClientModInitializer {
-    public static final Identifier TEXTURE = new Identifier(LinkedStorageMod.MOD_ID, "block/linkedstorage");
-    public static final EntityModelLayer LINKEDCHESTMODELLAYER = new EntityModelLayer(new Identifier(LinkedStorageMod.MOD_ID, "linkedchest"), "main");
+    public static final ResourceLocation TEXTURE = new ResourceLocation(LinkedStorageMod.MOD_ID, "block/linkedstorage");
+    public static final ModelLayerLocation LINKEDCHESTMODELLAYER = new ModelLayerLocation(new ResourceLocation(LinkedStorageMod.MOD_ID, "linkedchest"), "main");
 
     @Override
     public void onInitializeClient() {
         EntityModelLayerImpl.PROVIDERS.put(LINKEDCHESTMODELLAYER, LinkedChestModel::getTexturedModelData);
         BlockEntityRendererRegistry.register(StorageBlock.blockEntity, StorageBlockRenderer::new);
-        FabricModelPredicateProviderRegistry.register(ModItems.storageItem, new Identifier("open"), (stack, world, entity, seed) -> {
+        FabricModelPredicateProviderRegistry.register(ModItems.storageItem, new ResourceLocation("open"), (stack, world, entity, seed) -> {
             String channel = LinkedInventoryHelper.getItemChannel(stack).getChannelName();
             return ChannelViewers.getViewersFor(channel) ? 1 : 0;
         });
-        ScreenRegistry.register(LinkedStorageMod.LINKED_SCREEN_HANDLER_TYPE, GenericContainerScreen::new);
+        ScreenRegistry.register(LinkedStorageMod.LINKED_SCREEN_HANDLER_TYPE, ContainerScreen::new);
         ColorProviderRegistryImpl.ITEM.register((stack, layer) -> {
             DyeChannel dyeChannel = LinkedInventoryHelper.getItemChannel(stack);
             if (layer > 0 && layer < 4) {
                 byte[] colors = dyeChannel.dyeChannel;
-                return DyeColor.byId(colors[layer - 1]).getMapColor().color;
+                return DyeColor.byId(colors[layer - 1]).getMapColor().col;
             }
             if (layer == 4 && dyeChannel instanceof PlayerDyeChannel)
-                return DyeColor.LIGHT_BLUE.getMapColor().color;
-            return DyeColor.WHITE.getMapColor().color;
+                return DyeColor.LIGHT_BLUE.getMapColor().col;
+            return DyeColor.WHITE.getMapColor().col;
         }, ModItems.storageItem, ModBlocks.storageBlock);
         UpdateViewerList.registerReceivePacket();
         FabricLoader.getInstance().getModContainer(LinkedStorageMod.MOD_ID).ifPresent(modContainer -> {
-            ResourceManagerHelper.registerBuiltinResourcePack(new Identifier(LinkedStorageMod.MOD_ID, "enderstorage"), "resourcepacks/enderstorage", modContainer, false);
+            ResourceManagerHelper.registerBuiltinResourcePack(new ResourceLocation(LinkedStorageMod.MOD_ID, "enderstorage"), "resourcepacks/enderstorage", modContainer, false);
         });
     }
 

@@ -6,35 +6,34 @@ import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.kyrptonaught.linkedstorage.LinkedStorageMod;
 import net.kyrptonaught.linkedstorage.util.LinkedInventoryHelper;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.DyeItem;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.packet.c2s.play.CustomPayloadC2SPacket;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.protocol.game.ServerboundCustomPayloadPacket;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.DyeItem;
 
 public class SetDyePacket {
-    private static final Identifier DYE_SET_PACKET = new Identifier(LinkedStorageMod.MOD_ID, "dyesetpacket");
+    private static final ResourceLocation DYE_SET_PACKET = new ResourceLocation(LinkedStorageMod.MOD_ID, "dyesetpacket");
 
     public static void registerReceivePacket() {
         ServerPlayNetworking.registerGlobalReceiver(DYE_SET_PACKET, (server, player, handler, buf, responseSender) -> {
             int slot = buf.readInt();
             BlockPos pos = buf.readBlockPos();
             server.execute(() -> {
-                int dye = ((DyeItem) player.getMainHandStack().getItem()).getColor().getId();
-                LinkedInventoryHelper.setBlockDye(slot, dye, player.getEntityWorld(), pos);
+                int dye = ((DyeItem) player.getMainHandItem().getItem()).getDyeColor().getId();
+                LinkedInventoryHelper.setBlockDye(slot, dye, player.getCommandSenderWorld(), pos);
                 if (!player.isCreative())
-                    player.getMainHandStack().decrement(1);
+                    player.getMainHandItem().shrink(1);
             });
         });
     }
 
     @Environment(EnvType.CLIENT)
     public static void sendPacket(int slot, BlockPos pos) {
-        PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         buf.writeInt(slot);
         buf.writeBlockPos(pos);
-        MinecraftClient.getInstance().getNetworkHandler().getConnection().send(new CustomPayloadC2SPacket(DYE_SET_PACKET, new PacketByteBuf(buf)));
+        Minecraft.getInstance().getConnection().getConnection().send(new ServerboundCustomPayloadPacket(DYE_SET_PACKET, new FriendlyByteBuf(buf)));
     }
 }

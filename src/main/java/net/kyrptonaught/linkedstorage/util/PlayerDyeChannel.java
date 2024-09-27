@@ -3,11 +3,10 @@ package net.kyrptonaught.linkedstorage.util;
 import com.mojang.authlib.GameProfile;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.integrated.IntegratedServer;
-import net.minecraft.text.Text;
-
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.server.IntegratedServer;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -15,7 +14,7 @@ import java.util.UUID;
 
 public class PlayerDyeChannel extends DyeChannel {
     public UUID playerID;
-    private Text playerName;
+    private Component playerName;
 
     public PlayerDyeChannel(UUID playerID, byte[] dyeChannel) {
         super(dyeChannel);
@@ -40,22 +39,22 @@ public class PlayerDyeChannel extends DyeChannel {
 
     @Override
     @Environment(EnvType.CLIENT)
-    public List<Text> getCleanName() {
+    public List<Component> getCleanName() {
         if (playerName == null) {
-            IntegratedServer server = MinecraftClient.getInstance().getServer();
+            IntegratedServer server = Minecraft.getInstance().getSingleplayerServer();
             Optional<GameProfile> player = Optional.empty();
             if (server != null)
-                player = server.getUserCache().getByUuid(playerID);
-            playerName = player.isPresent() ? Text.literal(player.get().getName()) : Text.translatable("text.linkeditem.unknownplayerdyechannel");
+                player = server.getProfileCache().get(playerID);
+            playerName = player.isPresent() ? Component.literal(player.get().getName()) : Component.translatable("text.linkeditem.unknownplayerdyechannel");
         }
-        ArrayList<Text> output = new ArrayList<>(super.getCleanName());
-        output.add(0, Text.translatable("text.linkeditem.playerdyechannel", playerName));
+        ArrayList<Component> output = new ArrayList<>(super.getCleanName());
+        output.add(0, Component.translatable("text.linkeditem.playerdyechannel", playerName));
         return output;
     }
 
     @Override
-    public NbtCompound toTag(NbtCompound tag) {
-        tag.putUuid("playerid", playerID);
+    public CompoundTag toTag(CompoundTag tag) {
+        tag.putUUID("playerid", playerID);
         return super.toTag(tag);
     }
 }

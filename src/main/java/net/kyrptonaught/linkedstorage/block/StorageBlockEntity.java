@@ -7,12 +7,12 @@ import net.kyrptonaught.linkedstorage.LinkedStorageMod;
 import net.kyrptonaught.linkedstorage.inventory.LinkedInventory;
 import net.kyrptonaught.linkedstorage.network.ChannelViewers;
 import net.kyrptonaught.linkedstorage.util.DyeChannel;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
 
 public class StorageBlockEntity extends OpenableBlockEntity {
     private DyeChannel dyeChannel = DyeChannel.defaultChannel();
@@ -27,15 +27,15 @@ public class StorageBlockEntity extends OpenableBlockEntity {
     }
 
     @Override
-    public void readNbt(NbtCompound compoundTag_1) {
-        super.readNbt(compoundTag_1);
+    public void load(CompoundTag compoundTag_1) {
+        super.load(compoundTag_1);
         dyeChannel = DyeChannel.fromTag(compoundTag_1);
-        this.markDirty();
+        this.setChanged();
     }
 
     @Override
-    public void writeNbt(NbtCompound compoundTag_1) {
-        super.writeNbt(compoundTag_1);
+    public void saveAdditional(CompoundTag compoundTag_1) {
+        super.saveAdditional(compoundTag_1);
         dyeChannel.toTag(compoundTag_1);
     }
 
@@ -45,7 +45,7 @@ public class StorageBlockEntity extends OpenableBlockEntity {
     }
 
     private void updateInventory() {
-        if (!world.isClient) {
+        if (!level.isClientSide) {
             linkedInventory = LinkedStorageMod.getInventory(dyeChannel);
         }
     }
@@ -53,15 +53,15 @@ public class StorageBlockEntity extends OpenableBlockEntity {
     public void setDye(int slot, int dye) {
         dyeChannel.setSlot(slot, (byte) dye);
         updateInventory();
-        this.markDirty();
-        if (!world.isClient) sync();
+        this.setChanged();
+        if (!level.isClientSide) sync();
     }
 
     public void setChannel(DyeChannel channel) {
         this.dyeChannel = channel;
         updateInventory();
-        this.markDirty();
-        if (!world.isClient) sync();
+        this.setChanged();
+        if (!level.isClientSide) sync();
     }
 
     public DyeChannel getChannel() {
@@ -69,24 +69,24 @@ public class StorageBlockEntity extends OpenableBlockEntity {
     }
 
     @Override
-    public final BlockEntityUpdateS2CPacket toUpdatePacket() {
-        return BlockEntityUpdateS2CPacket.create(this);
+    public final ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
     }
 
     @Override
-    public final NbtCompound toInitialChunkDataNbt() {
-        NbtCompound nbt = super.toInitialChunkDataNbt();
-        writeNbt(nbt);
+    public final CompoundTag getUpdateTag() {
+        CompoundTag nbt = super.getUpdateTag();
+        saveAdditional(nbt);
         return nbt;
     }
 
     // Thank you Fabric API
     public void sync() {
-        Preconditions.checkNotNull(world); // Maintain distinct failure case from below
-        if (!(world instanceof ServerWorld))
+        Preconditions.checkNotNull(level); // Maintain distinct failure case from below
+        if (!(level instanceof ServerLevel))
             throw new IllegalStateException("Cannot call sync() on the logical client! Did you check world.isClient first?");
 
-        ((ServerWorld) world).getChunkManager().markForUpdate(getPos());
+        ((ServerLevel) level).getChunkSource().blockChanged(getBlockPos());
     }
 
     @Override

@@ -2,9 +2,8 @@ package net.kyrptonaught.linkedstorage.network;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.kyrptonaught.linkedstorage.inventory.LinkedContainer;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
-
+import net.minecraft.world.entity.player.Player;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,10 +21,10 @@ public class ChannelViewers {
         viewers.get(channel).add(uuid);
     }
 
-    public static void addViewerFor(String channel, PlayerEntity player) {
-        addViewerFor(channel, player.getUuid());
-        if (!player.getWorld().isClient)
-            UpdateViewerList.sendPacket(player.getServer(), channel, player.getUuid(), true);
+    public static void addViewerFor(String channel, Player player) {
+        addViewerFor(channel, player.getUUID());
+        if (!player.level().isClientSide)
+            UpdateViewerList.sendPacket(player.getServer(), channel, player.getUUID(), true);
     }
 
     static void removeViewerFor(String channel, UUID player) {
@@ -41,8 +40,8 @@ public class ChannelViewers {
         ServerTickEvents.START_SERVER_TICK.register(server -> {
             for (String channel : ChannelViewers.viewers.keySet())
                 for (UUID uuid : ChannelViewers.viewers.get(channel)) {
-                    PlayerEntity player = server.getPlayerManager().getPlayer(uuid);
-                    if (player == null || !(player.currentScreenHandler instanceof LinkedContainer)) {
+                    Player player = server.getPlayerList().getPlayer(uuid);
+                    if (player == null || !(player.containerMenu instanceof LinkedContainer)) {
                         removeViewerForServer(channel, uuid, server);
                     }
                 }

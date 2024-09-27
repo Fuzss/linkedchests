@@ -3,26 +3,24 @@ package net.kyrptonaught.linkedstorage.recipe;
 import com.google.gson.JsonObject;
 import net.kyrptonaught.linkedstorage.LinkedStorageMod;
 import net.kyrptonaught.linkedstorage.util.LinkedInventoryHelper;
-import net.minecraft.inventory.CraftingInventory;
-import net.minecraft.inventory.RecipeInputInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.recipe.RecipeSerializer;
-import net.minecraft.recipe.ShapedRecipe;
-import net.minecraft.recipe.book.CraftingRecipeCategory;
-import net.minecraft.registry.DynamicRegistryManager;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.CraftingContainer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.ShapedRecipe;
 
 public class CopyDyeRecipe extends ShapedRecipe {
 
     public CopyDyeRecipe(ShapedRecipe shapedRecipe) {
-        super(shapedRecipe.getId(), "linkedstorage", shapedRecipe.getCategory(), shapedRecipe.getWidth(), shapedRecipe.getHeight(), shapedRecipe.getIngredients(), shapedRecipe.getOutput(null));
+        super(shapedRecipe.getId(), "linkedstorage", shapedRecipe.category(), shapedRecipe.getWidth(), shapedRecipe.getHeight(), shapedRecipe.getIngredients(), shapedRecipe.getResultItem(null));
     }
 
     @Override
-    public ItemStack craft(RecipeInputInventory inv, DynamicRegistryManager dynamicRegistryManager) {
-        ItemStack output = this.getOutput(dynamicRegistryManager).copy();
-        LinkedInventoryHelper.setItemChannel(LinkedInventoryHelper.getItemChannel(inv.getStack(4)), output);
+    public ItemStack assemble(CraftingContainer inv, RegistryAccess dynamicRegistryManager) {
+        ItemStack output = this.getResultItem(dynamicRegistryManager).copy();
+        LinkedInventoryHelper.setItemChannel(LinkedInventoryHelper.getItemChannel(inv.getItem(4)), output);
         return output;
     }
 
@@ -33,18 +31,18 @@ public class CopyDyeRecipe extends ShapedRecipe {
     public static class Serializer implements RecipeSerializer<CopyDyeRecipe> {
 
         @Override
-        public CopyDyeRecipe read(Identifier id, JsonObject json) {
-            return new CopyDyeRecipe(ShapedRecipe.Serializer.SHAPED.read(id, json));
+        public CopyDyeRecipe fromJson(ResourceLocation id, JsonObject json) {
+            return new CopyDyeRecipe(ShapedRecipe.Serializer.SHAPED_RECIPE.fromJson(id, json));
         }
 
         @Override
-        public CopyDyeRecipe read(Identifier id, PacketByteBuf buf) {
-            return new CopyDyeRecipe(ShapedRecipe.Serializer.SHAPED.read(id, buf));
+        public CopyDyeRecipe fromNetwork(ResourceLocation id, FriendlyByteBuf buf) {
+            return new CopyDyeRecipe(ShapedRecipe.Serializer.SHAPED_RECIPE.fromNetwork(id, buf));
         }
 
         @Override
-        public void write(PacketByteBuf buf, CopyDyeRecipe recipe) {
-            ShapedRecipe.Serializer.SHAPED.write(buf, recipe);
+        public void toNetwork(FriendlyByteBuf buf, CopyDyeRecipe recipe) {
+            ShapedRecipe.Serializer.SHAPED_RECIPE.toNetwork(buf, recipe);
         }
     }
 }

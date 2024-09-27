@@ -1,13 +1,12 @@
 package net.kyrptonaught.linkedstorage.util;
 
 import net.kyrptonaught.linkedstorage.inventory.LinkedInventory;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.world.PersistentState;
-
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.saveddata.SavedData;
 import java.util.HashMap;
 import java.util.UUID;
 
-public class ChannelManager extends PersistentState {
+public class ChannelManager extends SavedData {
     public final static String SAVEVERSION = "2.0";
     private final InventoryStorage globalInventories = new InventoryStorage("GLOBAL");
     private final HashMap<UUID, InventoryStorage> personalInventories = new HashMap<>();
@@ -16,12 +15,12 @@ public class ChannelManager extends PersistentState {
         super();
     }
 
-    public static PersistentState fromNbt(NbtCompound tag) {
+    public static SavedData fromNbt(CompoundTag tag) {
         ChannelManager cman = new ChannelManager();
         cman.globalInventories.fromTag(tag);
         cman.personalInventories.clear();
-        NbtCompound personalInvs = tag.getCompound("personalInvs");
-        personalInvs.getKeys().forEach(uuid -> {
+        CompoundTag personalInvs = tag.getCompound("personalInvs");
+        personalInvs.getAllKeys().forEach(uuid -> {
             InventoryStorage personalInv = new InventoryStorage(uuid);
             personalInv.fromTag(personalInvs.getCompound(uuid));
             cman.personalInventories.put(UUID.fromString(uuid), personalInv);
@@ -31,12 +30,12 @@ public class ChannelManager extends PersistentState {
         return cman;
     }
 
-    public NbtCompound writeNbt(NbtCompound tag) {
+    public CompoundTag save(CompoundTag tag) {
         globalInventories.toTag(tag);
-        NbtCompound personalInvs = new NbtCompound();
+        CompoundTag personalInvs = new CompoundTag();
         personalInventories.values().forEach(inventoryStorage -> {
             if (inventoryStorage.getInventories().size() > 0)
-                personalInvs.put(inventoryStorage.name, inventoryStorage.toTag(new NbtCompound()));
+                personalInvs.put(inventoryStorage.name, inventoryStorage.toTag(new CompoundTag()));
         });
         tag.put("personalInvs", personalInvs);
         tag.putString("saveVersion", SAVEVERSION);

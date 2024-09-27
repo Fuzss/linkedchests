@@ -7,31 +7,30 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.kyrptonaught.linkedstorage.LinkedStorageMod;
 import net.kyrptonaught.linkedstorage.inventory.LinkedContainer;
 import net.kyrptonaught.linkedstorage.util.LinkedInventoryHelper;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.packet.c2s.play.CustomPayloadC2SPacket;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.protocol.game.ServerboundCustomPayloadPacket;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
 
 public class OpenStoragePacket {
-    private static final Identifier OPEN_STORAGE_PACKET = new Identifier(LinkedStorageMod.MOD_ID, "openpacket");
+    private static final ResourceLocation OPEN_STORAGE_PACKET = new ResourceLocation(LinkedStorageMod.MOD_ID, "openpacket");
 
     public static void registerReceivePacket() {
         ServerPlayNetworking.registerGlobalReceiver(OPEN_STORAGE_PACKET, (server, player, handler, buf, responseSender) -> {
             BlockPos pos = buf.readBlockPos();
             server.execute(() -> {
-                World world = player.getEntityWorld();
-                player.openHandledScreen(LinkedContainer.createScreenHandlerFactory(LinkedInventoryHelper.getBlockChannel(world, pos)));
+                Level world = player.getCommandSenderWorld();
+                player.openMenu(LinkedContainer.createScreenHandlerFactory(LinkedInventoryHelper.getBlockChannel(world, pos)));
             });
         });
     }
 
     @Environment(EnvType.CLIENT)
     public static void sendPacket(BlockPos pos) {
-        PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         buf.writeBlockPos(pos);
-        MinecraftClient.getInstance().getNetworkHandler().getConnection().send(new CustomPayloadC2SPacket(OPEN_STORAGE_PACKET, new PacketByteBuf(buf)));
+        Minecraft.getInstance().getConnection().getConnection().send(new ServerboundCustomPayloadPacket(OPEN_STORAGE_PACKET, new FriendlyByteBuf(buf)));
     }
 }
