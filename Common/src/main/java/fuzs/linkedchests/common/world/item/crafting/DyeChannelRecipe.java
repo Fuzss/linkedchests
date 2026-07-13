@@ -54,6 +54,7 @@ public final class DyeChannelRecipe extends CustomRecipe {
                         return false;
                     }
                 }
+
                 return true;
             } else {
                 return false;
@@ -90,6 +91,7 @@ public final class DyeChannelRecipe extends CustomRecipe {
                 }
             }
         }
+
         return dyeItems;
     }
 
@@ -119,7 +121,6 @@ public final class DyeChannelRecipe extends CustomRecipe {
     }
 
     record PositionedItem(ItemStack itemStack, int posX, int posY) {
-
         public int index(int width) {
             return this.posX + this.posY * width;
         }
