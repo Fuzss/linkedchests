@@ -5,11 +5,17 @@
     "26.1.x": "maintained",
     "26.2.x": "primary"
   },
-  "properties": {
-    "distributions.curseforge.id": "1258307",
-    "distributions.curseforge.slug": "linked-chests",
-    "distributions.github.slug": "linked-chests",
-    "distributions.modrinth.id": "Mr2x2AUf",
-    "distributions.modrinth.slug": "linked-chests"
+  "distributions": {
+    "curseforge": {
+      "id": "1258307",
+      "slug": "linked-chests"
+    },
+    "github": {
+      "slug": "linked-chests"
+    },
+    "modrinth": {
+      "id": "Mr2x2AUf",
+      "slug": "linked-chests"
+    }
   }
 }
